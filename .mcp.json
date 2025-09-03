@@ -1,0 +1,51 @@
+{
+  "name": "Bebo Work App MCP Configuration",
+  "version": "1.0.0",
+  "description": "MCP server configuration for Bebo Work App development",
+  "mcpServers": {
+    "filesystem": {
+      "command": "bunx",
+      "args": [
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/norvin/Cursor/similar-triangle"
+      ],
+      "description": "File system access for the project"
+    },
+    "github": {
+      "command": "bunx",
+      "args": [
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_TOKEN_HERE"
+      },
+      "description": "GitHub integration for norvinteo/pspl"
+    },
+    "puppeteer": {
+      "command": "bunx",
+      "args": ["@modelcontextprotocol/server-puppeteer"],
+      "env": {},
+      "description": "Browser automation for testing"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    },
+    "brave-search": {
+      "command": "bunx",
+      "args": [
+        "@modelcontextprotocol/server-brave-search"
+      ],
+      "env": {
+        "BRAVE_API_KEY": "YOUR_BRAVE_API_KEY_HERE"
+      },
+      "description": "Web search capabilities"
+    }
+  },
+  "settings": {
+    "autoStart": ["filesystem", "brave-search", "puppeteer"],
+    "debug": false
+  }
+}

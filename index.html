@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Triangle Master - เรียนรู้ความคล้ายแบบสนุก!</title>
+    <link rel="stylesheet" href="style.css">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        function App() {
+            const [currentSection, setCurrentSection] = useState('intro');
+            const [score, setScore] = useState(0);
+            const [totalQuestions, setTotalQuestions] = useState(0);
+
+            const menuItems = [
+                { id: 'intro', label: 'ความคล้าย', icon: '📐' },
+                { id: 'triangles', label: 'รูปสามเหลี่ยมคล้าย', icon: '🔺' },
+                { id: 'visualization', label: 'ภาพเคลื่อนไหว', icon: '🎨' },
+                { id: 'calculator', label: 'เครื่องคำนวณ', icon: '🧮' },
+                { id: 'exercises', label: 'แบบฝึกหัด', icon: '✏️' },
+                { id: 'realworld', label: 'ตัวอย่างจริง', icon: '🌍' }
+            ];
+
+            return (
+                <div className="app-container">
+                    <header className="app-header">
+                        <h1>🎓 เรียนรู้เรื่องความคล้ายและรูปสามเหลี่ยมคล้าย</h1>
+                        <div className="score-display">
+                            คะแนน: {score}/{totalQuestions}
+                        </div>
+                    </header>
+                    
+                    <nav className="navigation">
+                        {menuItems.map(item => (
+                            <button
+                                key={item.id}
+                                className={`nav-button ${currentSection === item.id ? 'active' : ''}`}
+                                onClick={() => setCurrentSection(item.id)}
+                            >
+                                <span className="nav-icon">{item.icon}</span>
+                                <span>{item.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+
+                    <main className="main-content">
+                        {currentSection === 'intro' && <IntroSection />}
+                        {currentSection === 'triangles' && <TrianglesSection />}
+                        {currentSection === 'visualization' && <VisualizationSection />}
+                        {currentSection === 'calculator' && <CalculatorSection />}
+                        {currentSection === 'exercises' && <ExercisesSection setScore={setScore} setTotalQuestions={setTotalQuestions} />}
+                        {currentSection === 'realworld' && <RealWorldSection />}
+                    </main>
+                </div>
+            );
+        }
+
+        function IntroSection() {
+            const [selectedExample, setSelectedExample] = useState(0);
+            
+            const examples = [
+                {
+                    title: 'รูปถ่าย',
+                    description: 'รูปถ่ายขนาดต่างๆ แต่ยังคงสัดส่วนเดิม',
+                    sizes: [{ width: 100, height: 150 }, { width: 150, height: 225 }, { width: 200, height: 300 }]
+                },
+                {
+                    title: 'แผนที่',
+                    description: 'แผนที่ย่อส่วนแต่รักษาสัดส่วนระยะทาง',
+                    sizes: [{ width: 120, height: 120 }, { width: 180, height: 180 }, { width: 240, height: 240 }]
+                },
+                {
+                    title: 'โมเดล',
+                    description: 'โมเดลอาคารที่ย่อขนาดตามสัดส่วน',
+                    sizes: [{ width: 80, height: 160 }, { width: 120, height: 240 }, { width: 160, height: 320 }]
+                }
+            ];
+
+            return (
+                <section className="intro-section">
+                    <h2>🌟 ความคล้าย (Similarity) คืออะไร?</h2>
+                    
+                    <div className="definition-box">
+                        <h3>นิยาม</h3>
+                        <p>
+                            <strong>ความคล้าย</strong> หมายถึง ความสัมพันธ์ระหว่างรูปทรงสองรูปที่มี
+                            <span className="highlight">รูปร่างเหมือนกัน</span> แต่
+                            <span className="highlight">ขนาดต่างกัน</span>
+                        </p>
+                        <p>
+                            รูปที่คล้ายกันจะมี:
+                        </p>
+                        <ul>
+                            <li>✅ มุมที่สอดคล้องกันเท่ากันทุกมุม</li>
+                            <li>✅ ด้านที่สอดคล้องกันมีอัตราส่วนเท่ากัน</li>
+                            <li>✅ รูปร่างเหมือนกันแต่ขนาดอาจต่างกัน</li>
+                        </ul>
+                    </div>
+
+                    <div className="examples-container">
+                        <h3>ตัวอย่างในชีวิตประจำวัน</h3>
+                        <div className="example-selector">
+                            {examples.map((ex, index) => (
+                                <button
+                                    key={index}
+                                    className={`example-btn ${selectedExample === index ? 'selected' : ''}`}
+                                    onClick={() => setSelectedExample(index)}
+                                >
+                                    {ex.title}
+                                </button>
+                            ))}
+                        </div>
+                        
+                        <div className="example-display">
+                            <h4>{examples[selectedExample].title}</h4>
+                            <p>{examples[selectedExample].description}</p>
+                            <div className="size-demonstration">
+                                {examples[selectedExample].sizes.map((size, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="demo-box"
+                                        style={{
+                                            width: size.width + 'px',
+                                            height: size.height + 'px',
+                                            animation: `pulse 2s infinite ${idx * 0.3}s`
+                                        }}
+                                    >
+                                        <span>{size.width}×{size.height}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="info-box">
+                        <h3>💡 จำไว้นะ!</h3>
+                        <p>
+                            การที่รูปสองรูปจะคล้ายกัน ไม่จำเป็นต้องมีขนาดเท่ากัน 
+                            แต่ต้องมีรูปร่างเหมือนกันและสัดส่วนของด้านต้องเท่ากัน
+                        </p>
+                    </div>
+                </section>
+            );
+        }
+
+        function TrianglesSection() {
+            const [selectedCondition, setSelectedCondition] = useState('AA');
+            
+            const conditions = {
+                'AA': {
+                    title: 'มุม-มุม (AA)',
+                    description: 'ถ้ามุมสองมุมของรูปสามเหลี่ยมหนึ่งเท่ากับมุมสองมุมของรูปสามเหลี่ยมอีกรูปหนึ่ง',
+                    example: 'มุม A = มุม D และ มุม B = มุม E'
+                },
+                'SSS': {
+                    title: 'ด้าน-ด้าน-ด้าน (SSS)',
+                    description: 'ถ้าด้านทั้งสามของรูปสามเหลี่ยมหนึ่งมีอัตราส่วนเท่ากับด้านทั้งสามของรูปสามเหลี่ยมอีกรูปหนึ่ง',
+                    example: 'AB/DE = BC/EF = AC/DF'
+                },
+                'SAS': {
+                    title: 'ด้าน-มุม-ด้าน (SAS)',
+                    description: 'ถ้าด้านสองด้านของรูปสามเหลี่ยมหนึ่งมีอัตราส่วนเท่ากับด้านสองด้านของรูปสามเหลี่ยมอีกรูปหนึ่ง และมุมที่อยู่ระหว่างด้านทั้งสองเท่ากัน',
+                    example: 'AB/DE = AC/DF และ มุม A = มุม D'
+                }
+            };
+
+            return (
+                <section className="triangles-section">
+                    <h2>🔺 รูปสามเหลี่ยมคล้าย</h2>
+                    
+                    <div className="properties-box">
+                        <h3>คุณสมบัติของรูปสามเหลี่ยมคล้าย</h3>
+                        <div className="properties-grid">
+                            <div className="property-card">
+                                <div className="property-icon">📐</div>
+                                <h4>มุมที่สอดคล้องกัน</h4>
+                                <p>มุมที่สอดคล้องกันมีขนาดเท่ากันทุกมุม</p>
+                            </div>
+                            <div className="property-card">
+                                <div className="property-icon">📏</div>
+                                <h4>ด้านที่สอดคล้องกัน</h4>
+                                <p>ด้านที่สอดคล้องกันมีอัตราส่วนเท่ากัน</p>
+                            </div>
+                            <div className="property-card">
+                                <div className="property-icon">🔄</div>
+                                <h4>อัตราส่วนความคล้าย</h4>
+                                <p>อัตราส่วนของด้านที่สอดคล้องกันเรียกว่า k</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="conditions-container">
+                        <h3>เงื่อนไขการเป็นรูปสามเหลี่ยมคล้าย</h3>
+                        <div className="condition-tabs">
+                            {Object.keys(conditions).map(key => (
+                                <button
+                                    key={key}
+                                    className={`condition-tab ${selectedCondition === key ? 'active' : ''}`}
+                                    onClick={() => setSelectedCondition(key)}
+                                >
+                                    {conditions[key].title}
+                                </button>
+                            ))}
+                        </div>
+                        
+                        <div className="condition-content">
+                            <h4>{conditions[selectedCondition].title}</h4>
+                            <p className="condition-description">
+                                {conditions[selectedCondition].description}
+                            </p>
+                            <div className="condition-example">
+                                <strong>ตัวอย่าง:</strong> {conditions[selectedCondition].example}
+                            </div>
+                            <TriangleVisual condition={selectedCondition} />
+                        </div>
+                    </div>
+
+                    <div className="formula-box">
+                        <h3>สูตรสำคัญ</h3>
+                        <div className="formula">
+                            <p>ถ้า △ABC ~ △DEF แล้ว:</p>
+                            <div className="formula-content">
+                                <div>AB/DE = BC/EF = AC/DF = k</div>
+                                <div>พื้นที่ △ABC / พื้นที่ △DEF = k²</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        function TriangleVisual({ condition }) {
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const drawTriangle = (x, y, scale, color, label) => {
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + 100 * scale, y);
+                    ctx.lineTo(x + 50 * scale, y - 80 * scale);
+                    ctx.closePath();
+                    ctx.stroke();
+
+                    ctx.fillStyle = color;
+                    ctx.font = `${14 * scale}px Sarabun`;
+                    ctx.fillText(label, x + 40 * scale, y + 20);
+                };
+
+                drawTriangle(50, 150, 1, '#4CAF50', '△ABC');
+                drawTriangle(200, 150, 1.5, '#2196F3', '△DEF');
+
+                if (condition === 'AA') {
+                    ctx.fillStyle = '#FF9800';
+                    ctx.beginPath();
+                    ctx.arc(50, 150, 10, 0, Math.PI / 4);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(200, 150, 15, 0, Math.PI / 4);
+                    ctx.stroke();
+                }
+            }, [condition]);
+
+            return <canvas ref={canvasRef} width={400} height={200} className="triangle-canvas" />;
+        }
+
+        function VisualizationSection() {
+            const [scale, setScale] = useState(1);
+            const [rotating, setRotating] = useState(false);
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                
+                const animate = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    ctx.save();
+                    ctx.translate(200, 150);
+                    if (rotating) {
+                        ctx.rotate((Date.now() / 1000) % (2 * Math.PI));
+                    }
+                    ctx.scale(scale, scale);
+                    
+                    ctx.strokeStyle = '#9C27B0';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -50);
+                    ctx.lineTo(43, 25);
+                    ctx.lineTo(-43, 25);
+                    ctx.closePath();
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                    
+                    requestAnimationFrame(animate);
+                };
+                
+                animate();
+            }, [scale, rotating]);
+
+            return (
+                <section className="visualization-section">
+                    <h2>🎨 ภาพเคลื่อนไหวแสดงความคล้าย</h2>
+                    
+                    <div className="visualization-container">
+                        <canvas ref={canvasRef} width={400} height={300} className="main-canvas" />
+                        
+                        <div className="controls">
+                            <div className="control-group">
+                                <label>ขนาด (Scale): {scale.toFixed(1)}</label>
+                                <input
+                                    type="range"
+                                    min="0.5"
+                                    max="2"
+                                    step="0.1"
+                                    value={scale}
+                                    onChange={(e) => setScale(parseFloat(e.target.value))}
+                                />
+                            </div>
+                            
+                            <div className="control-group">
+                                <button
+                                    className={`rotate-btn ${rotating ? 'active' : ''}`}
+                                    onClick={() => setRotating(!rotating)}
+                                >
+                                    {rotating ? '⏸️ หยุดหมุน' : '▶️ หมุน'}
+                                </button>
+                            </div>
+                            
+                            <div className="info-display">
+                                <p>อัตราส่วนความคล้าย k = {scale.toFixed(1)}</p>
+                                <p>พื้นที่เปลี่ยนไป = {(scale * scale).toFixed(2)} เท่า</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="explanation-box">
+                        <h3>การเปลี่ยนแปลงที่เกิดขึ้น</h3>
+                        <ul>
+                            <li>เมื่อขยาย/ย่อรูป มุมทุกมุมยังคงเท่าเดิม</li>
+                            <li>ด้านทุกด้านเปลี่ยนไปตามอัตราส่วน k</li>
+                            <li>พื้นที่เปลี่ยนไปตามอัตราส่วน k²</li>
+                            <li>การหมุนไม่ทำให้รูปเปลี่ยนขนาดหรือรูปร่าง</li>
+                        </ul>
+                    </div>
+                </section>
+            );
+        }
+
+        function CalculatorSection() {
+            const [triangle1, setTriangle1] = useState({ a: 3, b: 4, c: 5 });
+            const [triangle2, setTriangle2] = useState({ a: 6, b: 8, c: 10 });
+            const [result, setResult] = useState(null);
+
+            const calculateRatio = () => {
+                const ratio1 = triangle2.a / triangle1.a;
+                const ratio2 = triangle2.b / triangle1.b;
+                const ratio3 = triangle2.c / triangle1.c;
+                
+                const isSimilar = Math.abs(ratio1 - ratio2) < 0.01 && 
+                                 Math.abs(ratio2 - ratio3) < 0.01;
+                
+                setResult({
+                    ratio1: ratio1.toFixed(2),
+                    ratio2: ratio2.toFixed(2),
+                    ratio3: ratio3.toFixed(2),
+                    isSimilar,
+                    k: isSimilar ? ratio1.toFixed(2) : null
+                });
+            };
+
+            return (
+                <section className="calculator-section">
+                    <h2>🧮 เครื่องคำนวณอัตราส่วนความคล้าย</h2>
+                    
+                    <div className="calculator-container">
+                        <div className="triangle-input">
+                            <h3>รูปสามเหลี่ยมที่ 1</h3>
+                            <div className="input-group">
+                                <label>ด้าน a:</label>
+                                <input
+                                    type="number"
+                                    value={triangle1.a}
+                                    onChange={(e) => setTriangle1({...triangle1, a: parseFloat(e.target.value)})}
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>ด้าน b:</label>
+                                <input
+                                    type="number"
+                                    value={triangle1.b}
+                                    onChange={(e) => setTriangle1({...triangle1, b: parseFloat(e.target.value)})}
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>ด้าน c:</label>
+                                <input
+                                    type="number"
+                                    value={triangle1.c}
+                                    onChange={(e) => setTriangle1({...triangle1, c: parseFloat(e.target.value)})}
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="triangle-input">
+                            <h3>รูปสามเหลี่ยมที่ 2</h3>
+                            <div className="input-group">
+                                <label>ด้าน a:</label>
+                                <input
+                                    type="number"
+                                    value={triangle2.a}
+                                    onChange={(e) => setTriangle2({...triangle2, a: parseFloat(e.target.value)})}
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>ด้าน b:</label>
+                                <input
+                                    type="number"
+                                    value={triangle2.b}
+                                    onChange={(e) => setTriangle2({...triangle2, b: parseFloat(e.target.value)})}
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>ด้าน c:</label>
+                                <input
+                                    type="number"
+                                    value={triangle2.c}
+                                    onChange={(e) => setTriangle2({...triangle2, c: parseFloat(e.target.value)})}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button className="calculate-btn" onClick={calculateRatio}>
+                        คำนวณอัตราส่วน
+                    </button>
+                    
+                    {result && (
+                        <div className={`result-box ${result.isSimilar ? 'similar' : 'not-similar'}`}>
+                            <h3>ผลการคำนวณ</h3>
+                            <p>อัตราส่วนด้าน a: {triangle2.a}/{triangle1.a} = {result.ratio1}</p>
+                            <p>อัตราส่วนด้าน b: {triangle2.b}/{triangle1.b} = {result.ratio2}</p>
+                            <p>อัตราส่วนด้าน c: {triangle2.c}/{triangle1.c} = {result.ratio3}</p>
+                            <div className="conclusion">
+                                {result.isSimilar ? (
+                                    <>
+                                        <p className="success">✅ รูปสามเหลี่ยมทั้งสองคล้ายกัน!</p>
+                                        <p>อัตราส่วนความคล้าย k = {result.k}</p>
+                                    </>
+                                ) : (
+                                    <p className="error">❌ รูปสามเหลี่ยมทั้งสองไม่คล้ายกัน</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </section>
+            );
+        }
+
+        function ExercisesSection({ setScore, setTotalQuestions }) {
+            const [currentQuestion, setCurrentQuestion] = useState(0);
+            const [userAnswer, setUserAnswer] = useState('');
+            const [feedback, setFeedback] = useState('');
+            const [answered, setAnswered] = useState(false);
+            const [localScore, setLocalScore] = useState(0);
+
+            const questions = [
+                {
+                    question: 'ถ้ารูปสามเหลี่ยม ABC มีด้าน 3, 4, 5 และรูปสามเหลี่ยม DEF มีด้าน 9, 12, 15 จงหาอัตราส่วนความคล้าย',
+                    options: ['2', '3', '4', '5'],
+                    correct: 1,
+                    explanation: 'อัตราส่วน = 9/3 = 12/4 = 15/5 = 3'
+                },
+                {
+                    question: 'รูปสามเหลี่ยมสองรูปที่มีมุมสองมุมเท่ากัน จะ...',
+                    options: ['คล้ายกันเสมอ', 'ไม่คล้ายกัน', 'เท่ากันทุกประการ', 'ไม่แน่นอน'],
+                    correct: 0,
+                    explanation: 'ตามเงื่อนไข AA รูปสามเหลี่ยมที่มีมุมสองมุมเท่ากันจะคล้ายกันเสมอ'
+                },
+                {
+                    question: 'ถ้าอัตราส่วนความคล้าย k = 2 แล้วพื้นที่จะเปลี่ยนไปกี่เท่า?',
+                    options: ['2 เท่า', '3 เท่า', '4 เท่า', '8 เท่า'],
+                    correct: 2,
+                    explanation: 'พื้นที่เปลี่ยนไปตาม k² = 2² = 4 เท่า'
+                },
+                {
+                    question: 'รูปสามเหลี่ยมที่มีด้าน 5, 12, 13 คล้ายกับรูปสามเหลี่ยมใด?',
+                    options: ['10, 24, 26', '6, 13, 14', '15, 36, 40', '7, 14, 15'],
+                    correct: 0,
+                    explanation: 'รูปสามเหลี่ยม 10, 24, 26 มีอัตราส่วนด้านเท่ากับ 2 ทุกด้าน'
+                },
+                {
+                    question: 'ต้นไม้สูง 12 เมตร มีเงายาว 8 เมตร ถ้าอาคารมีเงายาว 20 เมตร อาคารสูงกี่เมตร?',
+                    options: ['25 เมตร', '30 เมตร', '35 เมตร', '40 เมตร'],
+                    correct: 1,
+                    explanation: 'ใช้อัตราส่วน: 12/8 = x/20, ดังนั้น x = 30 เมตร'
+                }
+            ];
+
+            useEffect(() => {
+                setTotalQuestions(questions.length);
+            }, []);
+
+            const handleAnswer = (optionIndex) => {
+                if (answered) return;
+                
+                setUserAnswer(optionIndex);
+                setAnswered(true);
+                
+                if (optionIndex === questions[currentQuestion].correct) {
+                    setFeedback('ถูกต้อง! 🎉');
+                    const newScore = localScore + 1;
+                    setLocalScore(newScore);
+                    setScore(newScore);
+                } else {
+                    setFeedback('ไม่ถูกต้อง 😔');
+                }
+            };
+
+            const nextQuestion = () => {
+                if (currentQuestion < questions.length - 1) {
+                    setCurrentQuestion(currentQuestion + 1);
+                    setUserAnswer('');
+                    setFeedback('');
+                    setAnswered(false);
+                }
+            };
+
+            const resetQuiz = () => {
+                setCurrentQuestion(0);
+                setUserAnswer('');
+                setFeedback('');
+                setAnswered(false);
+                setLocalScore(0);
+                setScore(0);
+            };
+
+            return (
+                <section className="exercises-section">
+                    <h2>✏️ แบบฝึกหัด</h2>
+                    
+                    <div className="quiz-container">
+                        <div className="quiz-header">
+                            <span>ข้อที่ {currentQuestion + 1} จาก {questions.length}</span>
+                            <span>คะแนน: {localScore}/{questions.length}</span>
+                        </div>
+                        
+                        <div className="question-box">
+                            <h3>{questions[currentQuestion].question}</h3>
+                            
+                            <div className="options">
+                                {questions[currentQuestion].options.map((option, index) => (
+                                    <button
+                                        key={index}
+                                        className={`option-btn ${
+                                            answered && index === questions[currentQuestion].correct ? 'correct' : ''
+                                        } ${
+                                            answered && index === userAnswer && index !== questions[currentQuestion].correct ? 'incorrect' : ''
+                                        }`}
+                                        onClick={() => handleAnswer(index)}
+                                        disabled={answered}
+                                    >
+                                        {option}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            {feedback && (
+                                <div className={`feedback ${feedback.includes('ถูกต้อง') ? 'correct' : 'incorrect'}`}>
+                                    <p>{feedback}</p>
+                                    <p className="explanation">{questions[currentQuestion].explanation}</p>
+                                </div>
+                            )}
+                            
+                            <div className="quiz-navigation">
+                                {currentQuestion < questions.length - 1 ? (
+                                    <button
+                                        className="next-btn"
+                                        onClick={nextQuestion}
+                                        disabled={!answered}
+                                    >
+                                        ข้อถัดไป →
+                                    </button>
+                                ) : (
+                                    answered && (
+                                        <div className="quiz-complete">
+                                            <h3>จบแบบฝึกหัด!</h3>
+                                            <p>คะแนนรวม: {localScore}/{questions.length}</p>
+                                            <button className="reset-btn" onClick={resetQuiz}>
+                                                เริ่มใหม่
+                                            </button>
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        function RealWorldSection() {
+            const [selectedExample, setSelectedExample] = useState(0);
+            
+            const examples = [
+                {
+                    title: 'การวัดความสูงของต้นไม้',
+                    description: 'ใช้หลักการความคล้ายในการวัดความสูงของต้นไม้โดยใช้เงา',
+                    method: `1. วัดความยาวเงาของต้นไม้
+2. วัดความสูงของไม้หรือคนที่ทราบความสูง
+3. วัดความยาวเงาของไม้หรือคนนั้น
+4. ใช้สัดส่วน: ความสูงต้นไม้/เงาต้นไม้ = ความสูงไม้/เงาไม้`,
+                    formula: 'h₁/s₁ = h₂/s₂'
+                },
+                {
+                    title: 'การอ่านแผนที่',
+                    description: 'แผนที่ใช้มาตราส่วนในการย่อขนาดพื้นที่จริง',
+                    method: `1. ดูมาตราส่วนบนแผนที่ เช่น 1:50,000
+2. วัดระยะทางบนแผนที่
+3. คูณด้วยมาตราส่วนเพื่อหาระยะทางจริง
+4. ตัวอย่าง: บนแผนที่ 2 ซม. = จริง 1 กม.`,
+                    formula: 'ระยะทางจริง = ระยะบนแผนที่ × มาตราส่วน'
+                },
+                {
+                    title: 'การถ่ายภาพ',
+                    description: 'กล้องถ่ายรูปใช้หลักการความคล้ายในการย่อขนาดภาพ',
+                    method: `1. วัตถุจริงมีขนาดใหญ่
+2. ผ่านเลนส์ของกล้อง
+3. ภาพที่ได้มีขนาดเล็กลงแต่รักษาสัดส่วน
+4. การซูมคือการเปลี่ยนอัตราส่วนความคล้าย`,
+                    formula: 'ขนาดภาพ/ขนาดจริง = ระยะภาพ/ระยะวัตถุ'
+                }
+            ];
+
+            return (
+                <section className="realworld-section">
+                    <h2>🌍 การใช้ความคล้ายในชีวิตจริง</h2>
+                    
+                    <div className="examples-grid">
+                        {examples.map((ex, index) => (
+                            <div
+                                key={index}
+                                className={`example-card ${selectedExample === index ? 'selected' : ''}`}
+                                onClick={() => setSelectedExample(index)}
+                            >
+                                <h3>{ex.title}</h3>
+                                <p>{ex.description}</p>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div className="example-detail">
+                        <h3>{examples[selectedExample].title}</h3>
+                        <p className="description">{examples[selectedExample].description}</p>
+                        
+                        <div className="method-box">
+                            <h4>วิธีการ:</h4>
+                            <pre>{examples[selectedExample].method}</pre>
+                        </div>
+                        
+                        <div className="formula-display">
+                            <h4>สูตร:</h4>
+                            <div className="formula">{examples[selectedExample].formula}</div>
+                        </div>
+                    </div>
+
+                    <div className="practice-problem">
+                        <h3>ลองคำนวณดู!</h3>
+                        <div className="problem-box">
+                            <p><strong>โจทย์:</strong> ถ้าเสาธงสูง 6 เมตร มีเงายาว 4 เมตร ในเวลาเดียวกัน อาคารมีเงายาว 24 เมตร อาคารสูงกี่เมตร?</p>
+                            <details>
+                                <summary>คลิกดูเฉลย</summary>
+                                <div className="solution">
+                                    <p>ใช้อัตราส่วน: 6/4 = x/24</p>
+                                    <p>4x = 6 × 24</p>
+                                    <p>4x = 144</p>
+                                    <p>x = 36 เมตร</p>
+                                    <p className="answer">ตอบ: อาคารสูง 36 เมตร</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

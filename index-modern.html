@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Triangle Master - เกมการเรียนรู้ความคล้าย</title>
+    <link rel="stylesheet" href="style-modern.css">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="particles-background"></div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // Sound effects helper
+        const playSound = (type) => {
+            const audio = new Audio();
+            const sounds = {
+                success: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAABCxAgAEABAAZGF0YQAAAAA=',
+                click: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAABCxAgAEABAAZGF0YQAAAAA=',
+                levelUp: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAABCxAgAEABAAZGF0YQAAAAA='
+            };
+            audio.src = sounds[type] || sounds.click;
+            audio.volume = 0.3;
+            audio.play().catch(() => {});
+        };
+
+        // Confetti helper
+        const triggerConfetti = () => {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#FF006E', '#FB5607', '#FFBE0B', '#8338EC', '#3A86FF']
+            });
+        };
+
+        // Main App Component
+        function App() {
+            const [currentSection, setCurrentSection] = useState('intro');
+            const [darkMode, setDarkMode] = useState(false);
+            const [userLevel, setUserLevel] = useState(1);
+            const [userXP, setUserXP] = useState(0);
+            const [achievements, setAchievements] = useState([]);
+            const [soundEnabled, setSoundEnabled] = useState(true);
+            const [mascotMood, setMascotMood] = useState('happy');
+            const [dailyStreak, setDailyStreak] = useState(1);
+            const [totalScore, setTotalScore] = useState(0);
+            const [showLevelUp, setShowLevelUp] = useState(false);
+
+            // Calculate XP needed for next level
+            const xpForNextLevel = userLevel * 100;
+            const xpProgress = (userXP / xpForNextLevel) * 100;
+
+            // Handle level up
+            useEffect(() => {
+                if (userXP >= xpForNextLevel) {
+                    setUserLevel(prev => prev + 1);
+                    setUserXP(0);
+                    setShowLevelUp(true);
+                    triggerConfetti();
+                    if (soundEnabled) playSound('levelUp');
+                    setTimeout(() => setShowLevelUp(false), 3000);
+                }
+            }, [userXP, xpForNextLevel, soundEnabled]);
+
+            // Add XP when completing tasks
+            const addXP = (amount) => {
+                setUserXP(prev => prev + amount);
+                setTotalScore(prev => prev + amount);
+            };
+
+            // Check for achievements
+            const checkAchievements = (type, value) => {
+                const newAchievements = [];
+                
+                if (type === 'firstCorrect' && !achievements.includes('firstStep')) {
+                    newAchievements.push('firstStep');
+                    addXP(50);
+                }
+                if (type === 'streak' && value >= 3 && !achievements.includes('streakMaster')) {
+                    newAchievements.push('streakMaster');
+                    addXP(100);
+                }
+                if (totalScore >= 500 && !achievements.includes('mathWizard')) {
+                    newAchievements.push('mathWizard');
+                    addXP(200);
+                }
+                
+                if (newAchievements.length > 0) {
+                    setAchievements(prev => [...prev, ...newAchievements]);
+                    triggerConfetti();
+                }
+            };
+
+            const menuItems = [
+                { id: 'intro', label: 'เริ่มต้น', icon: 'fa-home', color: '#FF006E' },
+                { id: 'triangles', label: 'สามเหลี่ยม', icon: 'fa-shapes', color: '#FB5607' },
+                { id: 'visualization', label: '3D Lab', icon: 'fa-cube', color: '#FFBE0B' },
+                { id: 'calculator', label: 'คำนวณ', icon: 'fa-calculator', color: '#8338EC' },
+                { id: 'exercises', label: 'ท้าทาย', icon: 'fa-gamepad', color: '#3A86FF' },
+                { id: 'realworld', label: 'โลกจริง', icon: 'fa-earth-americas', color: '#06FFB4' }
+            ];
+
+            return (
+                <div className={`app-container ${darkMode ? 'dark-mode' : ''}`}>
+                    {/* Level Up Notification */}
+                    {showLevelUp && (
+                        <div className="level-up-notification">
+                            <h2>🎉 LEVEL UP! 🎉</h2>
+                            <p>ยินดีด้วย! คุณได้เลเวล {userLevel} แล้ว!</p>
+                        </div>
+                    )}
+
+                    {/* Header with User Stats */}
+                    <header className="app-header">
+                        <div className="header-left">
+                            <div className="logo-container">
+                                <span className="logo">🎮</span>
+                                <h1 className="app-title">Triangle Master</h1>
+                            </div>
+                        </div>
+                        
+                        <div className="header-center">
+                            <div className="user-stats">
+                                <div className="stat-item level">
+                                    <i className="fas fa-star"></i>
+                                    <span>LV.{userLevel}</span>
+                                </div>
+                                <div className="xp-bar-container">
+                                    <div className="xp-bar">
+                                        <div className="xp-fill" style={{width: `${xpProgress}%`}}></div>
+                                    </div>
+                                    <span className="xp-text">{userXP}/{xpForNextLevel} XP</span>
+                                </div>
+                                <div className="stat-item streak">
+                                    <i className="fas fa-fire"></i>
+                                    <span>{dailyStreak} Days</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="header-right">
+                            <button 
+                                className="icon-btn"
+                                onClick={() => setSoundEnabled(!soundEnabled)}
+                            >
+                                <i className={`fas fa-volume-${soundEnabled ? 'up' : 'mute'}`}></i>
+                            </button>
+                            <button 
+                                className="icon-btn"
+                                onClick={() => setDarkMode(!darkMode)}
+                            >
+                                <i className={`fas fa-${darkMode ? 'sun' : 'moon'}`}></i>
+                            </button>
+                            <button className="icon-btn profile">
+                                <i className="fas fa-user"></i>
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Mascot Helper */}
+                    <div className={`mascot mascot-${mascotMood}`}>
+                        <div className="mascot-body">
+                            <div className="mascot-face">
+                                <div className="eye left"></div>
+                                <div className="eye right"></div>
+                                <div className="mouth"></div>
+                            </div>
+                        </div>
+                        <div className="mascot-speech">
+                            {mascotMood === 'happy' && 'สวัสดี! มาเรียนรู้กันเถอะ! 🎯'}
+                            {mascotMood === 'excited' && 'เยี่ยม! ทำได้ดีมาก! 🌟'}
+                            {mascotMood === 'thinking' && 'ลองคิดดูอีกที... 🤔'}
+                        </div>
+                    </div>
+
+                    {/* Navigation */}
+                    <nav className="navigation">
+                        {menuItems.map((item, index) => (
+                            <button
+                                key={item.id}
+                                className={`nav-button ${currentSection === item.id ? 'active' : ''}`}
+                                onClick={() => {
+                                    setCurrentSection(item.id);
+                                    if (soundEnabled) playSound('click');
+                                }}
+                                style={{
+                                    '--btn-color': item.color,
+                                    animationDelay: `${index * 0.1}s`
+                                }}
+                            >
+                                <i className={`fas ${item.icon}`}></i>
+                                <span>{item.label}</span>
+                                {currentSection === item.id && <div className="nav-indicator"></div>}
+                            </button>
+                        ))}
+                    </nav>
+
+                    {/* Achievements Bar */}
+                    <div className="achievements-bar">
+                        <h3><i className="fas fa-trophy"></i> รางวัลที่ได้รับ</h3>
+                        <div className="achievement-list">
+                            {achievements.length === 0 ? (
+                                <span className="no-achievements">ยังไม่มีรางวัล - เริ่มเรียนเพื่อปลดล็อค!</span>
+                            ) : (
+                                achievements.map(achievement => (
+                                    <div key={achievement} className="achievement-badge">
+                                        <i className="fas fa-medal"></i>
+                                        <span>{achievement}</span>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <main className="main-content">
+                        {currentSection === 'intro' && <IntroSection addXP={addXP} setMascotMood={setMascotMood} />}
+                        {currentSection === 'triangles' && <TrianglesSection addXP={addXP} setMascotMood={setMascotMood} />}
+                        {currentSection === 'visualization' && <VisualizationSection addXP={addXP} />}
+                        {currentSection === 'calculator' && <CalculatorSection addXP={addXP} setMascotMood={setMascotMood} />}
+                        {currentSection === 'exercises' && <ExercisesSection addXP={addXP} checkAchievements={checkAchievements} setMascotMood={setMascotMood} />}
+                        {currentSection === 'realworld' && <RealWorldSection addXP={addXP} />}
+                    </main>
+
+                    {/* Footer Stats */}
+                    <footer className="app-footer">
+                        <div className="footer-stats">
+                            <div className="stat">
+                                <i className="fas fa-coins"></i>
+                                <span>{totalScore} Points</span>
+                            </div>
+                            <div className="stat">
+                                <i className="fas fa-clock"></i>
+                                <span>Today: 45 min</span>
+                            </div>
+                            <div className="stat">
+                                <i className="fas fa-chart-line"></i>
+                                <span>85% Accuracy</span>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        // Enhanced Intro Section
+        function IntroSection({ addXP, setMascotMood }) {
+            const [selectedExample, setSelectedExample] = useState(0);
+            const [animateCard, setAnimateCard] = useState(false);
+            
+            const examples = [
+                {
+                    title: '📸 รูปถ่าย',
+                    description: 'รูปถ่ายขนาดต่างๆ แต่ยังคงสัดส่วนเดิม',
+                    color: '#FF006E',
+                    animation: 'photo'
+                },
+                {
+                    title: '🗺️ แผนที่',
+                    description: 'แผนที่ย่อส่วนแต่รักษาสัดส่วนระยะทาง',
+                    color: '#FB5607',
+                    animation: 'map'
+                },
+                {
+                    title: '🏢 โมเดล',
+                    description: 'โมเดลอาคารที่ย่อขนาดตามสัดส่วน',
+                    color: '#8338EC',
+                    animation: 'model'
+                }
+            ];
+
+            useEffect(() => {
+                setAnimateCard(true);
+                const timer = setTimeout(() => setAnimateCard(false), 600);
+                return () => clearTimeout(timer);
+            }, [selectedExample]);
+
+            return (
+                <section className="intro-section animated-section">
+                    <div className="section-header">
+                        <h2 className="neon-text">
+                            <span className="gradient-text">ความคล้าย</span>
+                            <span className="subtitle">Similarity Concept</span>
+                        </h2>
+                    </div>
+                    
+                    <div className="glass-card definition-card">
+                        <div className="card-glow"></div>
+                        <h3><i className="fas fa-book"></i> นิยาม</h3>
+                        <p className="definition-text">
+                            <span className="keyword">ความคล้าย</span> คือ ความสัมพันธ์ระหว่างรูปทรงที่มี
+                            <span className="highlight-neon">รูปร่างเหมือนกัน</span> แต่
+                            <span className="highlight-neon">ขนาดต่างกัน</span>
+                        </p>
+                        
+                        <div className="feature-grid">
+                            <div className="feature-item">
+                                <div className="feature-icon">
+                                    <i className="fas fa-angle-double-right"></i>
+                                </div>
+                                <span>มุมเท่ากันทุกมุม</span>
+                            </div>
+                            <div className="feature-item">
+                                <div className="feature-icon">
+                                    <i className="fas fa-ruler"></i>
+                                </div>
+                                <span>อัตราส่วนด้านเท่ากัน</span>
+                            </div>
+                            <div className="feature-item">
+                                <div className="feature-icon">
+                                    <i className="fas fa-shapes"></i>
+                                </div>
+                                <span>รูปร่างเหมือนกัน</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="examples-showcase">
+                        <h3 className="section-subtitle">
+                            <i className="fas fa-lightbulb"></i> ตัวอย่างในชีวิตจริง
+                        </h3>
+                        
+                        <div className="example-selector">
+                            {examples.map((ex, index) => (
+                                <button
+                                    key={index}
+                                    className={`example-btn ${selectedExample === index ? 'selected' : ''}`}
+                                    onClick={() => {
+                                        setSelectedExample(index);
+                                        addXP(5);
+                                        setMascotMood('happy');
+                                    }}
+                                    style={{'--btn-color': ex.color}}
+                                >
+                                    <span className="btn-icon">{ex.title.split(' ')[0]}</span>
+                                    <span className="btn-text">{ex.title.split(' ')[1]}</span>
+                                </button>
+                            ))}
+                        </div>
+                        
+                        <div className={`example-display glass-card ${animateCard ? 'card-flip' : ''}`}>
+                            <div className="example-content">
+                                <h4 style={{color: examples[selectedExample].color}}>
+                                    {examples[selectedExample].title}
+                                </h4>
+                                <p>{examples[selectedExample].description}</p>
+                                
+                                <div className="visual-demo">
+                                    <div className="size-boxes">
+                                        {[1, 1.5, 2].map((scale, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="demo-box"
+                                                style={{
+                                                    transform: `scale(${scale})`,
+                                                    animationDelay: `${idx * 0.2}s`,
+                                                    '--box-color': examples[selectedExample].color
+                                                }}
+                                            >
+                                                <i className="fas fa-expand"></i>
+                                                <span>{scale}x</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="interactive-quiz glass-card">
+                        <h3><i className="fas fa-question-circle"></i> Quick Check!</h3>
+                        <p>คลิกรูปที่คล้ายกัน:</p>
+                        <div className="shape-grid">
+                            {[true, false, true, false].map((isCorrect, idx) => (
+                                <button
+                                    key={idx}
+                                    className="shape-btn"
+                                    onClick={() => {
+                                        if (isCorrect) {
+                                            triggerConfetti();
+                                            addXP(10);
+                                            setMascotMood('excited');
+                                        } else {
+                                            setMascotMood('thinking');
+                                        }
+                                    }}
+                                >
+                                    <div className={`shape ${isCorrect ? 'correct' : 'wrong'}`}>
+                                        {isCorrect ? '▲' : '■'}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        // Enhanced Triangles Section
+        function TrianglesSection({ addXP, setMascotMood }) {
+            const [selectedCondition, setSelectedCondition] = useState('AA');
+            const [showAnimation, setShowAnimation] = useState(false);
+            
+            const conditions = {
+                'AA': {
+                    title: 'มุม-มุม (AA)',
+                    icon: 'fa-angle-left',
+                    color: '#FF006E',
+                    description: 'ถ้ามุมสองมุมเท่ากัน',
+                    formula: '∠A = ∠D และ ∠B = ∠E'
+                },
+                'SSS': {
+                    title: 'ด้าน-ด้าน-ด้าน (SSS)',
+                    icon: 'fa-ruler-horizontal',
+                    color: '#FB5607',
+                    description: 'ถ้าด้านทั้งสามมีอัตราส่วนเท่ากัน',
+                    formula: 'a₁/a₂ = b₁/b₂ = c₁/c₂'
+                },
+                'SAS': {
+                    title: 'ด้าน-มุม-ด้าน (SAS)',
+                    icon: 'fa-drafting-compass',
+                    color: '#8338EC',
+                    description: 'ถ้าด้านสองด้านและมุมระหว่างเท่ากัน',
+                    formula: 'a₁/a₂ = b₁/b₂ และ ∠C = ∠F'
+                }
+            };
+
+            return (
+                <section className="triangles-section animated-section">
+                    <div className="section-header">
+                        <h2 className="neon-text">
+                            <span className="gradient-text">รูปสามเหลี่ยมคล้าย</span>
+                            <span className="subtitle">Similar Triangles</span>
+                        </h2>
+                    </div>
+
+                    <div className="properties-showcase">
+                        <div className="property-cards">
+                            <div className="property-card glass-card">
+                                <div className="card-icon" style={{'--icon-color': '#FF006E'}}>
+                                    <i className="fas fa-angle-double-right"></i>
+                                </div>
+                                <h4>มุมเท่ากัน</h4>
+                                <p>มุมที่สอดคล้องกันเท่ากันทุกมุม</p>
+                            </div>
+                            <div className="property-card glass-card">
+                                <div className="card-icon" style={{'--icon-color': '#FB5607'}}>
+                                    <i className="fas fa-ruler"></i>
+                                </div>
+                                <h4>อัตราส่วนด้าน</h4>
+                                <p>ด้านที่สอดคล้องมีอัตราส่วนเท่ากัน</p>
+                            </div>
+                            <div className="property-card glass-card">
+                                <div className="card-icon" style={{'--icon-color': '#8338EC'}}>
+                                    <i className="fas fa-shapes"></i>
+                                </div>
+                                <h4>รูปร่างคงที่</h4>
+                                <p>รูปร่างเหมือนกันทุกประการ</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="conditions-explorer glass-card">
+                        <h3><i className="fas fa-microscope"></i> เงื่อนไขความคล้าย</h3>
+                        
+                        <div className="condition-tabs">
+                            {Object.keys(conditions).map(key => (
+                                <button
+                                    key={key}
+                                    className={`condition-tab ${selectedCondition === key ? 'active' : ''}`}
+                                    onClick={() => {
+                                        setSelectedCondition(key);
+                                        setShowAnimation(true);
+                                        addXP(5);
+                                        setTimeout(() => setShowAnimation(false), 1000);
+                                    }}
+                                    style={{'--tab-color': conditions[key].color}}
+                                >
+                                    <i className={`fas ${conditions[key].icon}`}></i>
+                                    <span>{key}</span>
+                                </button>
+                            ))}
+                        </div>
+                        
+                        <div className={`condition-detail ${showAnimation ? 'slide-in' : ''}`}>
+                            <div className="detail-header" style={{background: conditions[selectedCondition].color}}>
+                                <h4>{conditions[selectedCondition].title}</h4>
+                            </div>
+                            <div className="detail-content">
+                                <p className="description">
+                                    {conditions[selectedCondition].description}
+                                </p>
+                                <div className="formula-box">
+                                    <code>{conditions[selectedCondition].formula}</code>
+                                </div>
+                                <InteractiveTriangle condition={selectedCondition} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="formula-reference glass-card">
+                        <h3><i className="fas fa-square-root-alt"></i> สูตรสำคัญ</h3>
+                        <div className="formula-grid">
+                            <div className="formula-item">
+                                <span className="formula-label">อัตราส่วนด้าน:</span>
+                                <code>k = a₁/a₂ = b₁/b₂ = c₁/c₂</code>
+                            </div>
+                            <div className="formula-item">
+                                <span className="formula-label">อัตราส่วนพื้นที่:</span>
+                                <code>Area₁/Area₂ = k²</code>
+                            </div>
+                            <div className="formula-item">
+                                <span className="formula-label">อัตราส่วนเส้นรอบรูป:</span>
+                                <code>P₁/P₂ = k</code>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        // Interactive Triangle Component
+        function InteractiveTriangle({ condition }) {
+            const canvasRef = useRef(null);
+            const [rotation, setRotation] = useState(0);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                
+                const animate = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    // Draw grid
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < canvas.width; i += 20) {
+                        ctx.beginPath();
+                        ctx.moveTo(i, 0);
+                        ctx.lineTo(i, canvas.height);
+                        ctx.stroke();
+                    }
+                    for (let i = 0; i < canvas.height; i += 20) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, i);
+                        ctx.lineTo(canvas.width, i);
+                        ctx.stroke();
+                    }
+                    
+                    // Draw triangles
+                    ctx.save();
+                    ctx.translate(canvas.width / 2, canvas.height / 2);
+                    ctx.rotate(rotation * Math.PI / 180);
+                    
+                    // First triangle
+                    ctx.strokeStyle = '#FF006E';
+                    ctx.lineWidth = 3;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#FF006E';
+                    ctx.beginPath();
+                    ctx.moveTo(-50, 30);
+                    ctx.lineTo(50, 30);
+                    ctx.lineTo(0, -50);
+                    ctx.closePath();
+                    ctx.stroke();
+                    
+                    // Second triangle (scaled)
+                    ctx.strokeStyle = '#3A86FF';
+                    ctx.shadowColor = '#3A86FF';
+                    ctx.scale(1.5, 1.5);
+                    ctx.beginPath();
+                    ctx.moveTo(-50, 30);
+                    ctx.lineTo(50, 30);
+                    ctx.lineTo(0, -50);
+                    ctx.closePath();
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                    
+                    setRotation(prev => prev + 0.5);
+                    requestAnimationFrame(animate);
+                };
+                
+                animate();
+            }, [rotation]);
+
+            return (
+                <div className="triangle-canvas-container">
+                    <canvas ref={canvasRef} width={400} height={300} className="triangle-canvas" />
+                    <div className="canvas-controls">
+                        <button className="control-btn" onClick={() => setRotation(0)}>
+                            <i className="fas fa-redo"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Enhanced Visualization Section with 3D
+        function VisualizationSection({ addXP }) {
+            const [scale, setScale] = useState(1);
+            const [rotation, setRotation] = useState(0);
+            const [mode, setMode] = useState('2D');
+            const threeDivRef = useRef(null);
+            const sceneRef = useRef(null);
+            const rendererRef = useRef(null);
+
+            useEffect(() => {
+                if (mode === '3D' && threeDivRef.current && window.THREE) {
+                    // Initialize Three.js scene
+                    const scene = new window.THREE.Scene();
+                    scene.background = new window.THREE.Color(0x0a0a0a);
+                    
+                    const camera = new window.THREE.PerspectiveCamera(
+                        75,
+                        threeDivRef.current.clientWidth / threeDivRef.current.clientHeight,
+                        0.1,
+                        1000
+                    );
+                    
+                    const renderer = new window.THREE.WebGLRenderer({ antialias: true });
+                    renderer.setSize(threeDivRef.current.clientWidth, threeDivRef.current.clientHeight);
+                    threeDivRef.current.appendChild(renderer.domElement);
+                    
+                    // Create pyramid geometry
+                    const geometry = new window.THREE.ConeGeometry(1, 2, 3);
+                    const material = new window.THREE.MeshPhongMaterial({
+                        color: 0xFF006E,
+                        emissive: 0xFF006E,
+                        emissiveIntensity: 0.2,
+                        shininess: 100
+                    });
+                    const pyramid = new window.THREE.Mesh(geometry, material);
+                    scene.add(pyramid);
+                    
+                    // Add lights
+                    const light = new window.THREE.PointLight(0xffffff, 1, 100);
+                    light.position.set(5, 5, 5);
+                    scene.add(light);
+                    
+                    const ambientLight = new window.THREE.AmbientLight(0x404040);
+                    scene.add(ambientLight);
+                    
+                    camera.position.z = 5;
+                    
+                    sceneRef.current = scene;
+                    rendererRef.current = renderer;
+                    
+                    const animate = () => {
+                        requestAnimationFrame(animate);
+                        pyramid.rotation.x += 0.01;
+                        pyramid.rotation.y += 0.01;
+                        pyramid.scale.set(scale, scale, scale);
+                        renderer.render(scene, camera);
+                    };
+                    animate();
+                    
+                    return () => {
+                        if (threeDivRef.current && renderer.domElement) {
+                            threeDivRef.current.removeChild(renderer.domElement);
+                        }
+                    };
+                }
+            }, [mode, scale]);
+
+            return (
+                <section className="visualization-section animated-section">
+                    <div className="section-header">
+                        <h2 className="neon-text">
+                            <span className="gradient-text">3D Visualization Lab</span>
+                            <span className="subtitle">Interactive Learning</span>
+                        </h2>
+                    </div>
+
+                    <div className="mode-selector">
+                        <button
+                            className={`mode-btn ${mode === '2D' ? 'active' : ''}`}
+                            onClick={() => setMode('2D')}
+                        >
+                            <i className="fas fa-square"></i> 2D Mode
+                        </button>
+                        <button
+                            className={`mode-btn ${mode === '3D' ? 'active' : ''}`}
+                            onClick={() => {
+                                setMode('3D');
+                                addXP(20);
+                            }}
+                        >
+                            <i className="fas fa-cube"></i> 3D Mode
+                        </button>
+                    </div>
+
+                    <div className="visualization-container glass-card">
+                        {mode === '2D' ? (
+                            <Canvas2D scale={scale} rotation={rotation} />
+                        ) : (
+                            <div ref={threeDivRef} className="three-container" style={{height: '400px'}}></div>
+                        )}
+                        
+                        <div className="controls-panel">
+                            <div className="control-group">
+                                <label className="control-label">
+                                    <i className="fas fa-expand"></i> Scale: {scale.toFixed(1)}x
+                                </label>
+                                <input
+                                    type="range"
+                                    className="neon-slider"
+                                    min="0.5"
+                                    max="3"
+                                    step="0.1"
+                                    value={scale}
+                                    onChange={(e) => setScale(parseFloat(e.target.value))}
+                                />
+                            </div>
+                            
+                            <div className="stats-display">
+                                <div className="stat-item">
+                                    <span>Ratio:</span>
+                                    <strong>{scale.toFixed(2)}</strong>
+                                </div>
+                                <div className="stat-item">
+                                    <span>Area:</span>
+                                    <strong>{(scale * scale).toFixed(2)}x</strong>
+                                </div>
+                                <div className="stat-item">
+                                    <span>Volume:</span>
+                                    <strong>{(scale * scale * scale).toFixed(2)}x</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="info-cards">
+                        <div className="info-card glass-card">
+                            <i className="fas fa-info-circle"></i>
+                            <h4>การเปลี่ยนแปลง</h4>
+                            <ul>
+                                <li>มุมคงที่เสมอ</li>
+                                <li>ด้านเปลี่ยนตาม k</li>
+                                <li>พื้นที่เปลี่ยนตาม k²</li>
+                                <li>ปริมาตรเปลี่ยนตาม k³</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        // 2D Canvas Component
+        function Canvas2D({ scale, rotation }) {
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                
+                const draw = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    // Create gradient background
+                    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                    gradient.addColorStop(0, 'rgba(255, 0, 110, 0.1)');
+                    gradient.addColorStop(1, 'rgba(58, 134, 255, 0.1)');
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    ctx.save();
+                    ctx.translate(canvas.width / 2, canvas.height / 2);
+                    ctx.rotate(rotation * Math.PI / 180);
+                    ctx.scale(scale, scale);
+                    
+                    // Draw with neon effect
+                    ctx.strokeStyle = '#FF006E';
+                    ctx.lineWidth = 3;
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#FF006E';
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(0, -60);
+                    ctx.lineTo(52, 30);
+                    ctx.lineTo(-52, 30);
+                    ctx.closePath();
+                    ctx.stroke();
+                    
+                    // Draw vertices
+                    ctx.fillStyle = '#FFBE0B';
+                    ctx.shadowColor = '#FFBE0B';
+                    [
+                        [0, -60],
+                        [52, 30],
+                        [-52, 30]
+                    ].forEach(([x, y]) => {
+                        ctx.beginPath();
+                        ctx.arc(x, y, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                    
+                    ctx.restore();
+                };
+                
+                draw();
+            }, [scale, rotation]);
+
+            return <canvas ref={canvasRef} width={500} height={400} className="canvas-2d" />;
+        }
+
+        // Enhanced Calculator Section
+        function CalculatorSection({ addXP, setMascotMood }) {
+            const [triangle1, setTriangle1] = useState({ a: 3, b: 4, c: 5 });
+            const [triangle2, setTriangle2] = useState({ a: 6, b: 8, c: 10 });
+            const [result, setResult] = useState(null);
+            const [calculating, setCalculating] = useState(false);
+
+            const calculateRatio = () => {
+                setCalculating(true);
+                setMascotMood('thinking');
+                
+                setTimeout(() => {
+                    const ratio1 = triangle2.a / triangle1.a;
+                    const ratio2 = triangle2.b / triangle1.b;
+                    const ratio3 = triangle2.c / triangle1.c;
+                    
+                    const isSimilar = Math.abs(ratio1 - ratio2) < 0.01 && 
+                                     Math.abs(ratio2 - ratio3) < 0.01;
+                    
+                    setResult({
+                        ratio1: ratio1.toFixed(2),
+                        ratio2: ratio2.toFixed(2),
+                        ratio3: ratio3.toFixed(2),
+                        isSimilar,
+                        k: isSimilar ? ratio1.toFixed(2) : null
+                    });
+                    
+                    setCalculating(false);
+                    
+                    if (isSimilar) {
+                        triggerConfetti();
+                        addXP(30);
+                        setMascotMood('excited');
+                    } else {
+                        setMascotMood('thinking');
+                    }
+                }, 1000);
+            };
+
+            return (
+                <section className="calculator-section animated-section">
+                    <div className="section-header">
+                        <h2 className="neon-text">
+                            <span className="gradient-text">เครื่องคำนวณอัจฉริยะ</span>
+                            <span className="subtitle">Smart Calculator</span>
+                        </h2>
+                    </div>
+
+                    <div className="calculator-container">
+                        <div className="input-panels">
+                            <div className="input-panel glass-card">
+                                <h3><i className="fas fa-play"></i> สามเหลี่ยม 1</h3>
+                                <div className="input-fields">
+                                    <div className="input-group">
+                                        <label>ด้าน a</label>
+                                        <input
+                                            type="number"
+                                            className="neon-input"
+                                            value={triangle1.a}
+                                            onChange={(e) => setTriangle1({...triangle1, a: parseFloat(e.target.value)})}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>ด้าน b</label>
+                                        <input
+                                            type="number"
+                                            className="neon-input"
+                                            value={triangle1.b}
+                                            onChange={(e) => setTriangle1({...triangle1, b: parseFloat(e.target.value)})}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>ด้าน c</label>
+                                        <input
+                                            type="number"
+                                            className="neon-input"
+                                            value={triangle1.c}
+                                            onChange={(e) => setTriangle1({...triangle1, c: parseFloat(e.target.value)})}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="vs-indicator">
+                                <span>VS</span>
+                            </div>
+                            
+                            <div className="input-panel glass-card">
+                                <h3><i className="fas fa-forward"></i> สามเหลี่ยม 2</h3>
+                                <div className="input-fields">
+                                    <div className="input-group">
+                                        <label>ด้าน a</label>
+                                        <input
+                                            type="number"
+                                            className="neon-input"
+                                            value={triangle2.a}
+                                            onChange={(e) => setTriangle2({...triangle2, a: parseFloat(e.target.value)})}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>ด้าน b</label>
+                                        <input
+                                            type="number"
+                                            className="neon-input"
+                                            value={triangle2.b}
+                                            onChange={(e) => setTriangle2({...triangle2, b: parseFloat(e.target.value)})}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>ด้าน c</label>
+                                        <input
+                                            type="number"
+                                            className="neon-input"
+                                            value={triangle2.c}
+                                            onChange={(e) => setTriangle2({...triangle2, c: parseFloat(e.target.value)})}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button 
+                            className={`calculate-btn ${calculating ? 'calculating' : ''}`}
+                            onClick={calculateRatio}
+                            disabled={calculating}
+                        >
+                            {calculating ? (
+                                <>
+                                    <i className="fas fa-spinner fa-spin"></i> กำลังคำนวณ...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fas fa-calculator"></i> คำนวณความคล้าย
+                                </>
+                            )}
+                        </button>
+                        
+                        {result && (
+                            <div className={`result-panel glass-card ${result.isSimilar ? 'success' : 'error'}`}>
+                                <h3>
+                                    {result.isSimilar ? (
+                                        <><i className="fas fa-check-circle"></i> คล้ายกัน!</>
+                                    ) : (
+                                        <><i className="fas fa-times-circle"></i> ไม่คล้ายกัน</>
+                                    )}
+                                </h3>
+                                
+                                <div className="ratio-display">
+                                    <div className="ratio-item">
+                                        <span>a₂/a₁</span>
+                                        <strong>{result.ratio1}</strong>
+                                    </div>
+                                    <div className="ratio-item">
+                                        <span>b₂/b₁</span>
+                                        <strong>{result.ratio2}</strong>
+                                    </div>
+                                    <div className="ratio-item">
+                                        <span>c₂/c₁</span>
+                                        <strong>{result.ratio3}</strong>
+                                    </div>
+                                </div>
+                                
+                                {result.isSimilar && (
+                                    <div className="similarity-ratio">
+                                        <i className="fas fa-star"></i>
+                                        <span>อัตราส่วนความคล้าย k = {result.k}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </section>
+            );
+        }
+
+        // Enhanced Exercises Section with Gamification
+        function ExercisesSection({ addXP, checkAchievements, setMascotMood }) {
+            const [currentQuestion, setCurrentQuestion] = useState(0);
+            const [score, setScore] = useState(0);
+            const [streak, setStreak] = useState(0);
+            const [answered, setAnswered] = useState(false);
+            const [showExplanation, setShowExplanation] = useState(false);
+            const [timeLeft, setTimeLeft] = useState(30);
+            const [combo, setCombo] = useState(1);
+
+            const questions = [
+                {
+                    question: 'ถ้า △ABC ~ △DEF และ AB = 6, DE = 9 จงหา k',
+                    options: ['1.5', '2', '0.67', '3'],
+                    correct: 0,
+                    explanation: 'k = DE/AB = 9/6 = 1.5',
+                    xp: 10
+                },
+                {
+                    question: 'มุมสองมุมของสามเหลี่ยมหนึ่งเท่ากับมุมสองมุมของอีกรูป จะ...',
+                    options: ['คล้ายเสมอ', 'ไม่คล้าย', 'เท่ากัน', 'ไม่แน่นอน'],
+                    correct: 0,
+                    explanation: 'ตามเงื่อนไข AA สามเหลี่ยมจะคล้ายกัน',
+                    xp: 15
+                },
+                {
+                    question: 'ถ้า k = 3 พื้นที่จะเปลี่ยนไปกี่เท่า?',
+                    options: ['3', '6', '9', '27'],
+                    correct: 2,
+                    explanation: 'พื้นที่เปลี่ยนตาม k² = 3² = 9',
+                    xp: 20
+                }
+            ];
+
+            useEffect(() => {
+                if (timeLeft > 0 && !answered) {
+                    const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+                    return () => clearTimeout(timer);
+                } else if (timeLeft === 0 && !answered) {
+                    handleTimeout();
+                }
+            }, [timeLeft, answered]);
+
+            const handleTimeout = () => {
+                setAnswered(true);
+                setStreak(0);
+                setCombo(1);
+                setMascotMood('thinking');
+            };
+
+            const handleAnswer = (optionIndex) => {
+                if (answered) return;
+                
+                setAnswered(true);
+                
+                if (optionIndex === questions[currentQuestion].correct) {
+                    const points = questions[currentQuestion].xp * combo;
+                    setScore(score + points);
+                    setStreak(streak + 1);
+                    setCombo(Math.min(combo + 0.5, 3));
+                    addXP(points);
+                    checkAchievements('streak', streak + 1);
+                    triggerConfetti();
+                    setMascotMood('excited');
+                    playSound('success');
+                } else {
+                    setStreak(0);
+                    setCombo(1);
+                    setMascotMood('thinking');
+                }
+                
+                setShowExplanation(true);
+            };
+
+            const nextQuestion = () => {
+                if (currentQuestion < questions.length - 1) {
+                    setCurrentQuestion(currentQuestion + 1);
+                    setAnswered(false);
+                    setShowExplanation(false);
+                    setTimeLeft(30);
+                } else {
+                    // Game complete
+                    checkAchievements('gameComplete', score);
+                }
+            };
+
+            return (
+                <section className="exercises-section animated-section">
+                    <div className="section-header">
+                        <h2 className="neon-text">
+                            <span className="gradient-text">Challenge Mode</span>
+                            <span className="subtitle">Test Your Skills!</span>
+                        </h2>
+                    </div>
+
+                    <div className="game-stats">
+                        <div className="stat-box">
+                            <i className="fas fa-trophy"></i>
+                            <span>{score} pts</span>
+                        </div>
+                        <div className="stat-box">
+                            <i className="fas fa-fire"></i>
+                            <span>{streak} streak</span>
+                        </div>
+                        <div className="stat-box">
+                            <i className="fas fa-bolt"></i>
+                            <span>{combo.toFixed(1)}x combo</span>
+                        </div>
+                        <div className={`stat-box timer ${timeLeft < 10 ? 'warning' : ''}`}>
+                            <i className="fas fa-clock"></i>
+                            <span>{timeLeft}s</span>
+                        </div>
+                    </div>
+
+                    <div className="quiz-container glass-card">
+                        <div className="question-header">
+                            <span className="question-number">ข้อ {currentQuestion + 1}/{questions.length}</span>
+                            <div className="xp-reward">
+                                <i className="fas fa-star"></i> {questions[currentQuestion].xp} XP
+                            </div>
+                        </div>
+                        
+                        <h3 className="question-text">{questions[currentQuestion].question}</h3>
+                        
+                        <div className="options-grid">
+                            {questions[currentQuestion].options.map((option, index) => (
+                                <button
+                                    key={index}
+                                    className={`option-btn 
+                                        ${answered && index === questions[currentQuestion].correct ? 'correct' : ''} 
+                                        ${answered && index !== questions[currentQuestion].correct ? 'wrong' : ''}
+                                    `}
+                                    onClick={() => handleAnswer(index)}
+                                    disabled={answered}
+                                >
+                                    <span className="option-label">{String.fromCharCode(65 + index)}</span>
+                                    <span className="option-text">{option}</span>
+                                </button>
+                            ))}
+                        </div>
+                        
+                        {showExplanation && (
+                            <div className="explanation-box">
+                                <h4><i className="fas fa-lightbulb"></i> คำอธิบาย</h4>
+                                <p>{questions[currentQuestion].explanation}</p>
+                            </div>
+                        )}
+                        
+                        {answered && (
+                            <button className="next-btn" onClick={nextQuestion}>
+                                {currentQuestion < questions.length - 1 ? 'ข้อถัดไป' : 'เสร็จสิ้น'}
+                                <i className="fas fa-arrow-right"></i>
+                            </button>
+                        )}
+                    </div>
+                </section>
+            );
+        }
+
+        // Real World Section
+        function RealWorldSection({ addXP }) {
+            const [selectedExample, setSelectedExample] = useState(0);
+            
+            const examples = [
+                {
+                    title: 'วัดความสูงต้นไม้',
+                    icon: 'fa-tree',
+                    color: '#06FFB4',
+                    description: 'ใช้เงาและอัตราส่วนในการวัด',
+                    method: 'ใช้ไม้และเงาเทียบกับต้นไม้',
+                    formula: 'h₁/s₁ = h₂/s₂'
+                },
+                {
+                    title: 'อ่านแผนที่',
+                    icon: 'fa-map',
+                    color: '#FF006E',
+                    description: 'มาตราส่วนบนแผนที่',
+                    method: 'ใช้มาตราส่วนคำนวณระยะจริง',
+                    formula: 'ระยะจริง = ระยะบนแผนที่ × มาตราส่วน'
+                },
+                {
+                    title: 'ถ่ายภาพ',
+                    icon: 'fa-camera',
+                    color: '#FB5607',
+                    description: 'เลนส์กล้องและการซูม',
+                    method: 'การย่อขนาดภาพผ่านเลนส์',
+                    formula: 'ขนาดภาพ/ขนาดจริง = ระยะภาพ/ระยะวัตถุ'
+                }
+            ];
+
+            return (
+                <section className="realworld-section animated-section">
+                    <div className="section-header">
+                        <h2 className="neon-text">
+                            <span className="gradient-text">Real World Applications</span>
+                            <span className="subtitle">ความคล้ายในชีวิตจริง</span>
+                        </h2>
+                    </div>
+
+                    <div className="examples-showcase">
+                        {examples.map((ex, index) => (
+                            <div
+                                key={index}
+                                className={`example-card glass-card ${selectedExample === index ? 'selected' : ''}`}
+                                onClick={() => {
+                                    setSelectedExample(index);
+                                    addXP(5);
+                                }}
+                                style={{'--card-color': ex.color}}
+                            >
+                                <div className="card-header">
+                                    <i className={`fas ${ex.icon}`}></i>
+                                </div>
+                                <h3>{ex.title}</h3>
+                                <p>{ex.description}</p>
+                                {selectedExample === index && (
+                                    <div className="card-detail">
+                                        <div className="method">
+                                            <strong>วิธีการ:</strong> {ex.method}
+                                        </div>
+                                        <div className="formula">
+                                            <code>{ex.formula}</code>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="practice-problem glass-card">
+                        <h3><i className="fas fa-puzzle-piece"></i> ลองทำดู!</h3>
+                        <div className="problem">
+                            <p>เสาธงสูง 10 เมตร มีเงายาว 6 เมตร</p>
+                            <p>ต้นไม้มีเงายาว 15 เมตร จะสูงกี่เมตร?</p>
+                            <details className="solution">
+                                <summary>ดูเฉลย</summary>
+                                <div className="solution-content">
+                                    <p>10/6 = x/15</p>
+                                    <p>x = (10 × 15) / 6 = 25 เมตร</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        // Particle Background Effect
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles-background');
+            if (!particlesContainer) return;
+            
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (20 + Math.random() * 20) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Initialize app
+        ReactDOM.render(<App />, document.getElementById('root'));
+        createParticles();
+    </script>
+</body>
+</html>
